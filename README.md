@@ -1,2 +1,2 @@
 # ADSEAD80_UPXITSN1_BussolaUrbana_InteligenciaUrbana
-A data-driven municipal management platform that identifies vulnerable areas through police incident analysis, enabling smarter urban improvements and more effective public investments.
+Plataforma voltada para a gestão municipal, analisa dados de ocorrências policiais para identificar locais vulneráveis na cidade, direcionando serviços de zeladoria e melhorias na infraestrutura urbana, como modernização da iluminação e revitalização de praças e vias comerciais, com o objetivo de prevenir delitos e otimizar investimentos públicos.
