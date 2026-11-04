@@ -1,50 +1,63 @@
-# Bússola Urbana
+# Bússola Urbana — Plataforma de Inteligência Urbana
 
-Plataforma de inteligência urbana para apoio à decisão de gestor público em segurança preventiva, desenvolvida na disciplina de Usina de Projetos Experimentais I (UPX 1) — Centro Universitário Facens.
+Projeto da disciplina UPX TI 1 (Cidades Inteligentes) — Facens, Sorocaba/SP.
 
-## O problema
+## O que é
 
-Gestor de segurança pública decide onde alocar reforço de patrulhamento, priorizar manutenção de iluminação ou intervir em área de risco a partir de experiência de campo e boletim de ocorrência isolado, sem análise consolidada de padrão espacial e temporal — mesmo com dado de ocorrência já publicado de forma aberta.
+O Bússola Urbana identifica áreas de concentração de ocorrência (furto, roubo, tráfico) em Sorocaba/SP a partir de dado público real, calcula um índice de atenção explicável para cada área, e sugere ações de apoio à decisão para gestores de segurança pública e municipais — sem prever crime nem automatizar decisão policial.
 
-## A solução
+## Estágio real do projeto
 
-O Bússola Urbana transforma dado aberto de ocorrência da Secretaria de Segurança Pública do Estado de São Paulo (SSP-SP) em um índice de atenção explicável por área, sem depender de modelo preditivo ou classificação de indivíduo. Cada número é rastreável até o dado bruto que o gerou.
+- **Feito:** análise em Python sobre dado real da SSP-SP (agrupamento DBSCAN e Índice de Atenção), protótipo técnico em HTML e protótipo navegável no Figma (web para o gestor e mobile para o agente de campo e o cidadão).
+- **Não feito:** não há sistema em produção, banco de dados real, integração com a SSP, com o Infocrim ou com qualquer serviço de atendimento. O protocolo e o acompanhamento de relato existem só como telas no Figma.
+- **Arquitetura low-code (Airtable, Bubble/Glide, Make):** é um plano de evolução documentado em `docs/ARQUITETURA.md`, **não** foi implementado.
 
-## Metodologia
+## Estrutura deste repositório
 
-- **Recorte de dado:** furto, roubo e tráfico de entorpecentes, região de Sorocaba/SP, janeiro a junho de 2026 (4.279 ocorrências com coordenada válida)
-- **Clusterização espacial:** DBSCAN (eps = 0,25 km, min_samples = 20), identificando 23 áreas de concentração
-- **Índice de Atenção (0-100):** média entre percentil de volume de ocorrência e percentil de concentração no período de pico de cada área
-- **Classificação:** Alta (≥70), Média (45-69), Baixa (<45)
+```
+├── prototipo/
+│   └── index.html                  → protótipo técnico de validação (abre direto no navegador)
+├── scripts/
+│   ├── analise_clusters.py         → pipeline original de clustering (DBSCAN) e índice de atenção
+│   └── reproducao_resultados.py    → reproduz as contagens do artigo a partir de dados/ocorrencias_4279.csv
+├── dados/
+│   ├── ocorrencias_4279.csv        → 4.279 ocorrências georreferenciadas usadas na análise (SSP-SP, dados abertos)
+│   ├── crime_points.json           → pontos usados no protótipo HTML (versão anterior)
+│   └── clusters_index.json         → áreas e índice de uma rodada ANTERIOR (ver aviso abaixo)
+└── docs/
+    └── ARQUITETURA.md              → plano de arquitetura futura
+```
 
-## Estrutura do banco de dado
+## Aviso de versão dos dados
 
-Sete tabelas, documentadas em [`TABELAS.md`](./TABELAS.md):
+`dados/clusters_index.json` vem de uma rodada anterior da análise (23 áreas, 1.727 ocorrências nas áreas, índice máximo 76). Os números do artigo e do relatório (23 áreas, 1.695 ocorrências, índice máximo 72,8) vêm da análise final. Esse arquivo **não foi alterado à mão** para coincidir com os documentos e ainda não foi regenerado, porque isso exige o arquivo bruto da SSP, que não está neste repositório. Até lá, o índice da análise final não é reproduzível a partir deste repositório.
 
-| Tabela | Conteúdo |
-|---|---|
-| `usuarios` | Gestores, fiscais e equipe de zeladoria (login institucional) |
-| `ocorrencias_estatisticas` | Dado oficial da SSP-SP (fonte do índice) |
-| `relatos_cidadaos` | Reporte do cidadão, sem coleta de dado pessoal |
-| `manchas_criticas` | As 23 áreas identificadas, com índice e prioridade |
-| `vistorias_campo` | Diagnóstico técnico do fiscal em campo |
-| `ordens_zeladoria` | Ordem de serviço gerada após vistoria confirmada |
-| `historico_prioridades` | Linha do tempo de mudança de score por área |
+## O que dá para reproduzir aqui
 
-Script completo em [`PostgreSQL.sql`](./PostgreSQL.sql).
+Com `python scripts/reproducao_resultados.py` (precisa de pandas, scikit-learn e scipy):
 
-## Fluxo lógico do sistema
+- 4.279 registros, dos quais 201 têm data do fato anterior a 2026.
+- Base principal: 23 áreas, 1.695 ocorrências dentro (39,6%).
+- Análise complementar, só com as 4.078 datadas de janeiro a junho de 2026: 21 áreas, 1.504 dentro (36,9%).
+- Teste de persistência: treino de janeiro a março (1.934), teste de abril a junho (2.144); 26 áreas; as áreas reuniram 39,9% das ocorrências do teste.
+- Uma seleção simples por densidade, cobrindo a mesma área (cerca de 21 km²), reuniu 41,8%. Ou seja, o DBSCAN não trouxe vantagem de cobertura; ele forma áreas contínuas e fáceis de explicar.
 
-Diagrama completo em [`diagrama-ecossistema.md`](./diagrama-ecossistema.md). Resumo: cidadão acessa sem login (relato anônimo); gestor e fiscal acessam por login institucional; ambos convergem na lista de vistoria por prioridade; fiscal confirma em campo; sistema gera ordem de zeladoria; mapa é atualizado ao final do serviço.
+Limites: o resultado depende do raio e do mínimo de ocorrências (escolhas do grupo, não valores otimizados); os 250 m e o mínimo de 20 não passaram por teste de sensibilidade completo; o Índice de Atenção não demonstrou vantagem sobre o volume isolado.
 
-## Postura ética do projeto
+## Dado real e dado demonstrativo
 
-Este projeto exclui deliberadamente reconhecimento facial, integração com o Banco Nacional de Mandados de Prisão, e qualquer forma de classificação de indivíduo. O índice prioriza território, nunca pessoa — ver referencial teórico no relatório principal (Lum & Isaac, 2016, sobre viés em policiamento preditivo).
+- 🟢 **Real**: ocorrências (SSP-SP, dados abertos) e o agrupamento feito sobre elas.
+- 🔵 **Demonstrativo**: números das telas do protótipo (protocolo, etapas, pontos de iluminação, sensor), que não vêm de operação real.
+- ⚪ **Futuro**: banco de dados, atualização automática, integração com o Infocrim, ciclo antes/depois de intervenções.
 
-## Equipe
+## Banco de dados planejado e fluxo do sistema
 
-Projeto acadêmico desenvolvido em grupo — ver relatório completo (AC1) para papéis e responsabilidades individuais.
+São desenho de uma versão futura, não um sistema em funcionamento: o esquema com sete tabelas está em [`TABELAS.md`](./TABELAS.md) e em [`PostgreSQL.sql`](./PostgreSQL.sql), e o fluxo lógico planejado está em [`diagrama-ecossistema.md`](./diagrama-ecossistema.md).
 
-## Status
+## Documentação completa
 
-MVP em desenvolvimento em plataforma low-code (Glide + Google Sheets), com estrutura de dado já validada sobre a análise real.
+A documentação completa do projeto (Introdução, Persona, Lean Canvas, Canvas de Proposta de Valor, Estudo de Mercado, metodologia do índice) está no relatório entregue na Avaliação Final de UPX I; o artigo no modelo IEEE acompanha o relatório.
+
+## Fonte de dados
+
+SSP-SP — Portal de Dados Abertos de Criminalidade: https://www.ssp.sp.gov.br/estatistica/consultas
